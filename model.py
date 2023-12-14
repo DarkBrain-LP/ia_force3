@@ -161,6 +161,102 @@ class Force3:
     def move(self):
         return self.moveOneCase() + self.moveTwoCases() + self.posePion() + self.movePion()
 
+    def getPlayerPawns(self):
+        return [(i, j) for i in range(3) for j in range(3) if self.plateau[i][j] == self.current_player]
+
+    def getOpponentPawns(self):
+        return [(i, j) for i in range(3) for j in range(3) if self.plateau[i][j] != self.current_player and self.plateau[i][j] != -1 and self.plateau[i][j] != 0]
+    
+    """check if points that are in the list are all aligned
+    
+    Keyword arguments:
+    l -- list of points
+    Return: returns an integer if the points are aligned, otherwise, it return the number of points that are aligned
+    """
+    def f(self, l):
+        if len(l) <= 1:
+            return 0 # len(l)
+        # they are aligned diagonaly if for each point A and B, the difference abs(XB-XA) == abs(YB-YA) 
+        # they are aligned vertically if for each point A and B, XB == XA
+        # they are aligned horizontally if for each point A and B, YB == YA
+        # implement
+        # Check if points are aligned diagonally
+        # diagonal_aligned = [[list(l[i-1])] + [list(l[i])] for i in range(1, len(l)) if abs(l[i][0] - l[i-1][0]) == abs(l[i][1] - l[i-1][1])]#sum(abs(l[i][0] - l[i-1][0]) == abs(l[i][1] - l[i-1][1]) for i in range(1, len(l)))
+        diagonal_aligned = [l[i-1:i+1] for i in range(1, len(l)) if abs(l[i][0] - l[i-1][0]) == abs(l[i][1] - l[i-1][1])]
+        diagonal_aligned = []
+        diagonal_aligned.extend([l[i-1], l[i]] for i in range(1, len(l)) if abs(l[i][0] - l[i-1][0]) == abs(l[i][1] - l[i-1][1]))
+        diagonal_aligned = []
+        for i in range(1, len(l)):
+            if abs(l[i][0] - l[i-1][0]) == abs(l[i][1] - l[i-1][1]):
+                aligned_points = [l[i-1], l[i]]
+                diagonal_aligned.extend(aligned_points)
+
+        # Check if points are aligned horizontally
+        horizontal_aligned = [tuple(l[i-1:i+1]) for i in range(1, len(l)) if l[i][0] == l[i-1][0]] #sum(l[i][0] == l[i-1][0] for i in range(1, len(l)))
+        horizontal_aligned = []
+        for i in range(1, len(l)):
+            if l[i][0] == l[i-1][0]:
+                aligned_points = [l[i-1], l[i]]
+                horizontal_aligned.extend(aligned_points)
+        # Check if points are aligned vertically
+        vertical_aligned = [tuple(l[i-1:i+1]) for i in range(1, len(l)) if l[i][1] == l[i-1][1]] #sum(l[i][1] == l[i-1][1] for i in range(1, len(l)))
+        vertical_aligned = []
+        for i in range(1, len(l)):
+            if l[i][1] == l[i-1][1]:
+                aligned_points = [l[i-1], l[i]]
+                vertical_aligned.extend(aligned_points)
+
+        diagonal_aligned = set(diagonal_aligned)
+        vertical_aligned = set(vertical_aligned)
+        horizontal_aligned = set(horizontal_aligned)
+
+        print("diagonal_aligned {}".format(diagonal_aligned))
+        print("vertical_aligned {}".format(vertical_aligned))
+        print("horizontal_aligned {}".format(horizontal_aligned))
+
+        if len(diagonal_aligned) == 3 or len(vertical_aligned) == 3 or len(horizontal_aligned) == 3:
+            return 1
+        
+        empty_squares = [(i, j) for i in range(3) for j in range(3) if self.plateau[i][j] == -1]
+        print("empty_squares {}".format(empty_squares))
+
+        if len(diagonal_aligned) == 2 and any(el in [(0,0), (0,2), (2,0), (2,2)] for el in diagonal_aligned): # il faut qu'au moins un des deux points soit sur un bord
+            # check if any empty square and  the elements in the diagnal list are aligned
+            if any(all(abs(al[0] - sq[0]) == abs(al[1] - sq[1]) for al in diagonal_aligned) for sq in empty_squares):
+                return 100
+            else:
+                return 50
+        
+        if len(vertical_aligned) == 2:
+            # check if the empty case and  the elements in the vertical list are aligned
+            if any(all(al[1] == sq[1] for al in vertical_aligned) for sq in empty_squares):
+                return 100
+            else:
+                return 50
+        
+        if len(horizontal_aligned) == 2:
+            # check if the empty case and  the elements in the horizontal list are aligned
+            if any(all(al[0] == sq[0] for al in horizontal_aligned) for sq in empty_squares):
+                return 100
+            else:
+                return 50
+            
+        return 0
+    
+
+    """
+    Fonction d’évaluation 
+    Si deux pions sont alignés, la fonction eval sera fonction de la facilité à faire aligner le 3ème pion avec les autres. On peut donc vérifier si aucun pion de l’adversaire n’est sur la droite passant par les 2 pions, auquel cas la probabilité serait moins importante. 
+    Si aucun pion adversaire n’est sur la droite, la probabilité est alors très forte 
+    """
+    def eval(self):
+        player = self.current_player
+        pawns = self.getPlayerPawns()
+        print("pawns {}".format(pawns))
+        return self.f(pawns)
+
+    
+
 if __name__ == "__main__":
     game = Force3()
     print(game.plateau)
@@ -204,3 +300,11 @@ if __name__ == "__main__":
     #     for mv in move:
     #         print(mv)
     #     print()
+
+    game.plateau = [[1, -1, 0], 
+                    [1, 2, 1], 
+                    [-1, 2, 2]]
+    game.current_player = 2
+    for ln in game.plateau:
+        print(ln)
+    print(game.eval())
