@@ -25,48 +25,80 @@ class Card(ft.GestureDetector):
 
     def move_on_top(self):
         """Moves draggable card to the top of the stack"""
+        for item in self.get_draggable_items():
+            item.remove()
+            self.game.append(item)
+            self.game.update()
         # self.game.controls.remove(self)
         # self.game.controls.append(self)
         # self.game.remove(self)
         # self.game.append(self)
-        self.game.update()
+        try:
+            self.game.update()
+        except:
+            pass
 
     def bounce_back(self):
         """Returns card to its original position"""
         try:
-            if type(self) == Card:
-                self.top = self.slot.top
-                self.left = self.slot.left
-            else:
-                if self.slot is not None:
-                    self.top = self.game.start_top
-                    self.left = self.game.start_left
+            draggable_items = self.get_draggable_items()
+            for item in draggable_items:
+                item.top = self.game.start_top + draggable_items.index(item) * CARD_OFFSET
+                item.left = self.game.start_left
+            # if type(self) == Card:
+            #     self.top = self.slot.top
+            #     self.left = self.slot.left
+            # else:
+            #     if self.slot is not None:
+            #         self.top = self.game.start_top
+            #         self.left = self.game.start_left
         except:
             self.top = self.top
-
-        self.update()
+            self.left = self.left
+        # try:
+        self.game.update()
+        # self.update()
 
     def place(self, slot):
         """Place card to the slot"""
-        if slot.can_place(self):
-            self.top = slot.top
-            self.left = slot.left
-            if self.slot is not None:
-                self.slot.pile.remove(self)
-            self.slot = slot
-            slot.pile.append(self)
+        draggable_items = self.get_draggable_items()
+        for item in draggable_items:
+            item.top = slot.top + draggable_items.index(item) * CARD_OFFSET
+            item.left = slot.left
+            if item.slot is not None:
+                item.slot.pile.remove(item)
+            item.slot = slot
+            slot.pile.append(item)
+            # self.game.update()
+            # slot.update()
+        # if slot.can_place(self):
+        #     self.top = slot.top
+        #     self.left = slot.left
+        #     if self.slot is not None:
+        #         self.slot.pile.remove(self)
+        #     self.slot = slot
+        #     slot.pile.append(self)
+        # self.game.update()
 
     def start_drag(self, e: ft.DragStartEvent):
         # TODO : add the slot pile to the game instance to remove the card/pawn from it after drop is completed
         self.game.start_top = e.control.top
         self.game.start_left = e.control.left
         self.move_on_top()
-        self.update()
+        # self.update()
+        self.game.update()
 
     def drag(self, e: ft.DragUpdateEvent):
-        self.top = max(0, self.top + e.delta_y)
-        self.left = max(0, self.left + e.delta_x)
-        self.update()
+        draggable_items = self.get_draggable_items()
+        for item in draggable_items:
+            print("offset = {}".format(draggable_items.index(item) * CARD_OFFSET))
+            item.top = max(0, item.top + e.delta_y) #+ draggable_items.index(item) * CARD_OFFSET
+            item.left = max(0, item.left + e.delta_x)
+            self.game.update()
+        # self.top = max(0, self.top + e.delta_y)
+        # self.left = max(0, self.left + e.delta_x)
+        # self.update()
+        self.game.update()
 
     def drop(self, e: ft.DragEndEvent):
         for slot in self.game.slots:
@@ -78,10 +110,18 @@ class Card(ft.GestureDetector):
                     self.place(slot)
                 else:
                     self.bounce_back()
-                self.update()
+                # self.update()
+                self.game.update()
                 return
         self.bounce_back()
-        self.update()
+        # self.update()
+        self.game.update()
+
+    def get_draggable_items(self) -> list:
+        """returns the card with the pawn on it"""
+        return self.slot.pile[self.slot.pile.index(self):] if self.slot is not None else [self]
+        if self.slot is not None:
+            return self.slot.pile[-1]
 
 
 class Pawn(Card):
@@ -101,7 +141,8 @@ class Pawn(Card):
         slot.pile.append(self)
         print("after_place_pawn", "dest_slot_pile={}, pawn_slot_pile={}".format(slot.pile, self.slot.pile))
         slot.update()
-        self.update()
+        # self.update()
+        self.game.update()
 
     # place the pawn
     def init(self, slot):
@@ -109,6 +150,7 @@ class Pawn(Card):
         self.top = slot.top  # / 2
         self.left = slot.left  # / 2
         self.slot = slot
+        self.slot.pile.append(self)
 
 
 class Game(ft.Stack):
