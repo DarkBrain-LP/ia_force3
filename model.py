@@ -259,6 +259,7 @@ class Force3:
 
 if __name__ == "__main__":
     game = Force3()
+    game.plateau = [[-2, -1, 0], [-1, -1, -1], [-1, -1, 1]]
     print(game.plateau)
     moves =  game.move()
     print("{} moves possible".format(len(moves)))

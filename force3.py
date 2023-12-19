@@ -26,8 +26,8 @@ class Card(ft.GestureDetector):
     def move_on_top(self):
         """Moves draggable card to the top of the stack"""
         for item in self.get_draggable_items():
-            item.remove()
-            self.game.append(item)
+            self.game.controls.remove(item)
+            self.game.controls.append(item)
             self.game.update()
         # self.game.controls.remove(self)
         # self.game.controls.append(self)
@@ -91,7 +91,7 @@ class Card(ft.GestureDetector):
     def drag(self, e: ft.DragUpdateEvent):
         draggable_items = self.get_draggable_items()
         for item in draggable_items:
-            print("offset = {}".format(draggable_items.index(item) * CARD_OFFSET))
+            # print("offset = {}".format(draggable_items.index(item) * CARD_OFFSET))
             item.top = max(0, item.top + e.delta_y) #+ draggable_items.index(item) * CARD_OFFSET
             item.left = max(0, item.left + e.delta_x)
             self.game.update()
@@ -139,7 +139,7 @@ class Pawn(Card):
             self.slot.pile.remove(self)
         self.slot = slot
         slot.pile.append(self)
-        print("after_place_pawn", "dest_slot_pile={}, pawn_slot_pile={}".format(slot.pile, self.slot.pile))
+        # print("after_place_pawn", "dest_slot_pile={}, pawn_slot_pile={}".format(slot.pile, self.slot.pile))
         slot.update()
         # self.update()
         self.game.update()
@@ -197,7 +197,7 @@ class Game(ft.Stack):
             if i == 4:
                 continue
             self.game_cards[i].place(self.slots[i])
-            print("create_cards", "pile={}".format(self.slots[i].pile))
+            # print("create_cards", "pile={}".format(self.slots[i].pile))
 
         for i in range(3):
             self.pawn1_cards[i].init(self.pawn_slot1[i])
@@ -230,11 +230,17 @@ class Slot(ft.Container):
 
     def can_place(self, child: Card | Pawn):
         """Check if card can be placed on the slot"""
-        print("can_place", "pile={}".format(self.pile))
+        # print("can_place", "pile={}".format(self.pile))
         if isinstance(child, Pawn):
             return len(self.pile) == 1
         # case empty slot TODO : implement position consideration later
-        return len(self.pile) == 0
+        print("self.top={}, self.left={}, child.slot.top={}, child.slot.left={}".format(self.top, self.left, child.slot.top, child.slot.left))
+        if len(self.pile) == 0:
+            # if ((self.top == CARD_HEIGTH + 10) or (self.top == 3*(CARD_HEIGTH + 10)) and abs(child.slot.left - self.left) == 0) or (((self.left == 0) or (self.left == 200)) and self.top == child.slot.top):
+            if ((abs(child.slot.top - self.top) == 220) and abs(child.slot.left - self.left) == 0) or (((self.left == 0) or (self.left == 200)) and self.top == child.slot.top):
+                print("can_place 2 : True")
+                return True
+            return (abs(child.slot.left - self.left) == 100 and abs(child.slot.top - self.top) == 0) or (abs(child.slot.left - self.left) == 0 and abs(child.slot.top - self.top) == 110)
 
 
 # flet main
