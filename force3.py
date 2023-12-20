@@ -9,7 +9,7 @@ CARD_OFFSET = 20
 
 class Card(ft.GestureDetector):
 
-    def __init__(self, game, slot=None, color=None, border_radius=0):
+    def __init__(self, game, slot=None, color=None, border_radius=0, height=CARD_HEIGTH, width=CARD_WIDTH):
         super().__init__()
         self.slot = slot
         self.mouse_cursor = ft.MouseCursor.MOVE
@@ -22,7 +22,7 @@ class Card(ft.GestureDetector):
         # self.pawn = None
         self.game = game
         self.color = color
-        self.content = ft.Container(bgcolor=self.color, width=CARD_WIDTH, height=CARD_HEIGTH,
+        self.content = ft.Container(bgcolor=self.color, width=width, height=height,
                                     border_radius=border_radius)
 
     def move_on_top(self):
@@ -106,7 +106,7 @@ class Card(ft.GestureDetector):
             #     print("place card : It is a two vertical up to down move !!!")
             # else:
             # check if we can move two slots contents from left to right
-            if not self.game.initiating and slot.left == 0 and slot.top == self.slot.top:
+            if not self.game.initiating and slot.left == 0 and self.game.start_left == 200 and slot.top == self.slot.top:
                 # swap the slots
                 print("===> swap the slots")
                 # putain = self.game.get_horizontal_slots()
@@ -144,11 +144,12 @@ class Card(ft.GestureDetector):
 
                 reset_slots = self.game.get_horizontal_slots()
                 reset_slots[0] = horiz_slots
-                self.game.slots[3] = horiz_slots
+                index = 3 * (-1 + self.game.start_top // 110)
+                self.game.slots[index] = horiz_slots
                 reset_slots[1] = self.slot
-                self.game.slots[4] = self.slot
+                self.game.slots[index+1] = self.slot
                 reset_slots[2] = slot
-                self.game.slots[5] = slot
+                self.game.slots[index+2] = slot
 
                 # for i in range(len(horiz_slots)-1):
                 #     horiz_slots[i].swap(horiz_slots[i + 2])
@@ -230,8 +231,8 @@ class Card(ft.GestureDetector):
 
 
 class Pawn(Card):
-    def __init__(self, game, card: Card, top, left, color, border_radius=50):
-        super().__init__(game=game, color=color, border_radius=border_radius)
+    def __init__(self, game, card: Card, top, left, color, border_radius=50, height=CARD_HEIGTH/2, width=CARD_WIDTH):
+        super().__init__(game=game, color=color, border_radius=border_radius, height=height, width=width)
         self.top = top
         self.left = left
 
