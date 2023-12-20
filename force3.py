@@ -1,3 +1,5 @@
+from datetime import time
+
 import flet as ft
 
 CARD_WIDTH = 70
@@ -62,15 +64,118 @@ class Card(ft.GestureDetector):
     def place(self, slot):
         """Place card to the slot"""
         draggable_items = self.get_draggable_items()
-        for item in draggable_items:
-            item.top = slot.top + draggable_items.index(item) * CARD_OFFSET
-            item.left = slot.left
-            if item.slot is not None:
-                item.slot.pile.remove(item)
-            item.slot = slot
-            slot.pile.append(item)
-            # self.game.update()
-            # slot.update()
+        # TODO : check if it is a two move action. If it is then move the pawns on the line
+        try:
+            # if not self.game.initiating and slot.left == 0 and slot.top == self.slot.top:
+            #     print("place card : It is a two horizontal right to left move !!!")
+            #     # get the horizontal items
+            # elif not self.game.initiating and slot.left == 200 and slot.top == self.slot.top:
+            #     print("place card : It is a two horizontal left to right move !!!")
+            #     # get the horizontal slots
+            #     horiz_slots = [slt for slt in self.game.slots if slt.top == self.slot.top and slt.left != 200]
+            #     # horiz_slots.sort(key=lambda x: x.left, reverse=True)
+            #     for card_slot in self.game.slots:
+            #         if card_slot.top == self.slot.top and card_slot.left != 200:
+            #             # foreach slot, move the cards(with its pawn) to the right
+            #             slot_contents = card_slot.pile
+            #             for slot_item in slot_contents:
+            #                 if type(slot_item) == Card:
+            #                     draggable_items1 = slot_item.get_draggable_items()  # gets the slot items(card + pawn)
+            #                     for el in draggable_items1:
+            #                         # el.top = slot.top + draggable_items.index(el) * CARD_OFFSET
+            #                         if (self.game.start_left - el.left) % 100 != 0: # supposing that the user cannot exactly place the card in position 0, 100 or 200 (0.xx, 100.xx, 200.xx instead)
+            #                             el.left = self.game.start_left - 100
+            #                         else:
+            #                             el.left = el.left + 100  # move them to the right
+            #                         self.game.controls.remove(el)
+            #                         self.game.controls.append(el)
+            #                         self.game.update()
+            #                         # if el.slot is not None:
+            #                         #     el.slot.pile.remove(el)
+            #                         # el.slot = slot
+            #                         # slot.pile.append(el)
+            #             # break
+            #     # if ((slot.left == 0) or (slot.left == 200)) and slot.top == self.slot.top:
+            #     #     print("place card : It is a two horizontal move !!!")
+            #     # get the horizontal items
+            #     horizontal_items = []
+            #
+            # elif not self.game.initiating and self.slot.top - slot.top == 220 and abs(self.slot.left - slot.left) == 0:
+            #     print("place card : It is a two vertical down to up move !!!")
+            # elif not self.game.initiating and self.slot.top - slot.top == -220 and abs(self.slot.left - slot.left) == 0:
+            #     print("place card : It is a two vertical up to down move !!!")
+            # else:
+            # check if we can move two slots contents from left to right
+            if not self.game.initiating and slot.left == 0 and slot.top == self.slot.top:
+                # swap the slots
+                print("===> swap the slots")
+                # putain = self.game.get_horizontal_slots()
+                # putain[0], putain[1] = putain[1], putain[0]
+                # putain[1], putain[2] = putain[2], putain[1]
+                # self.game.update()
+                # return
+                draggables = self.get_draggable_items()
+                for el in draggables:
+                    el.left = self.game.start_left - 100  # slot.left
+                    # el.top = slot.top + draggables.index(el) * CARD_OFFSET
+                    # if type(el) == Card:
+                    #     el.update()
+                    self.game.update()
+                self.slot.left = self.game.start_left - 100 # mettre a jour le 100 en même temps ???
+                self.game.update()
+                slot.left = self.game.start_left
+                slot.update()
+                slot_els = slot.pile
+                for el in slot_els:
+                    el.left = self.game.start_left
+                    # el.update()
+                self.game.update()
+                    # self.game.update()
+                # get the horizontal slots
+                horiz_slots = self.game.get_horizontal_slots()
+                # sort by left
+                horiz_slots.sort(key=lambda x: x.left, reverse=True)
+                horiz_slots = horiz_slots[1]
+                horiz_slots.left = 0
+                horiz_slots.update()
+                middle_items = horiz_slots.pile
+                for el in middle_items:
+                    el.left = 0
+
+                reset_slots = self.game.get_horizontal_slots()
+                reset_slots[0] = horiz_slots
+                self.game.slots[3] = horiz_slots
+                reset_slots[1] = self.slot
+                self.game.slots[4] = self.slot
+                reset_slots[2] = slot
+                self.game.slots[5] = slot
+
+                # for i in range(len(horiz_slots)-1):
+                #     horiz_slots[i].swap(horiz_slots[i + 2])
+                #     # wait for 2 seconds don't use fl.sleep in the main thread
+                #     # ft.sleep(2)
+                #     horiz_slots[i].update()
+                #     horiz_slots[i + 1].update()
+                #     self.game.update()
+                # horiz_slots[0].swap(horiz_slots[1])
+                # horiz_slots[1].swap(horiz_slots[2])
+                # for i in self.game.get_horizontal_slots():
+                #     print("{} -> pile={}".format(i+1, i.pile))
+                # self.slot.swap(slot)
+                self.game.update()
+                return
+            for item in draggable_items:
+                item.top = slot.top + draggable_items.index(item) * CARD_OFFSET
+                item.left = slot.left
+                if item.slot is not None:
+                    item.slot.pile.remove(item)
+                item.slot = slot
+                slot.pile.append(item)
+                # self.game.update()
+                # slot.update()
+
+        except Exception as e:
+            pass
         # if slot.can_place(self):
         #     self.top = slot.top
         #     self.left = slot.left
@@ -92,7 +197,7 @@ class Card(ft.GestureDetector):
         draggable_items = self.get_draggable_items()
         for item in draggable_items:
             # print("offset = {}".format(draggable_items.index(item) * CARD_OFFSET))
-            item.top = max(0, item.top + e.delta_y) #+ draggable_items.index(item) * CARD_OFFSET
+            item.top = max(0, item.top + e.delta_y)  # + draggable_items.index(item) * CARD_OFFSET
             item.left = max(0, item.left + e.delta_x)
             self.game.update()
         # self.top = max(0, self.top + e.delta_y)
@@ -133,6 +238,9 @@ class Pawn(Card):
     # place the pawn
     def place(self, slot):
         """Place pawn to the card"""
+        # # TODO : check if it is a two move action. If it is then move the pawns on the line
+        # if ((abs(self.slot.top - slot.top) == 220) and abs(self.slot.left - slot.left) == 0) or (((slot.left == 0) or (slot.left == 200)) and slot.top == self.slot.top):
+        #     print("place card : It is a two move !!!")
         self.top = slot.top + len(slot.pile) * CARD_OFFSET  # / 2
         self.left = slot.left  # / 2
         if self.slot is not None and len(self.slot.pile) != 0:
@@ -168,7 +276,19 @@ class Game(ft.Stack):
         self.current_pile = []
         self.width = 1000
         self.height = 1000
+        self.initiating = True
         self.create_cards()
+
+    # method that returns the slots of the current horizontal line according to the start_top attribute
+    def get_horizontal_slots(self) -> list:
+        """Returns the slots of the current horizontal line according to the start_top attribute"""
+        return [slt for slt in self.slots if slt.top == self.start_top]
+
+    # method that returns the slots of the current vertical line according to the start_left attribute
+
+    def get_vertical_slots(self) -> list:
+        """Returns the slots of the current vertical line according to the start_left attribute"""
+        return [slt for slt in self.slots if slt.left == self.start_left]
 
     def create_cards(self):
         # create 9 slots
@@ -209,6 +329,7 @@ class Game(ft.Stack):
         self.controls.extend(self.pawn_slot2)
         self.controls.extend(self.pawn1_cards)
         self.controls.extend(self.pawn2_cards)
+        self.initiating = False
 
 
 class Slot(ft.Container):
@@ -228,19 +349,47 @@ class Slot(ft.Container):
         card.left = self.left
         card.slot = self
 
+    # method to swap two slots with all their content
+    def swap(self, slot):
+        """Swap two slots with all their content"""
+        # swap the slots
+        self.top, slot.top = slot.top, self.top
+        self.left, slot.left = slot.left, self.left
+        # swap the slots' piles
+        # self.pile, slot.pile = slot.pile, self.pile
+        # swap the slots' cards
+        for i in range(len(self.pile)):
+            # if type(self.pile[i]) == Pawn:
+            #     self.pile[i].top = self.top
+            # else:
+            #     self.pile[i].top = self.top + i * CARD_OFFSET
+            self.pile[i].top = self.top + i * CARD_OFFSET
+            self.pile[i].left = self.left
+        for i in range(len(slot.pile)):
+            slot.pile[i].top = slot.top
+            slot.pile[i].left = slot.left
+            # slot.pile[i].slot = slot
+        # update the slots
+        self.update()
+        slot.update()
+
     def can_place(self, child: Card | Pawn):
         """Check if card can be placed on the slot"""
         # print("can_place", "pile={}".format(self.pile))
         if isinstance(child, Pawn):
             return len(self.pile) == 1
         # case empty slot TODO : implement position consideration later
-        print("self.top={}, self.left={}, child.slot.top={}, child.slot.left={}".format(self.top, self.left, child.slot.top, child.slot.left))
+        print("self.top={}, self.left={}, child.slot.top={}, child.slot.left={}".format(self.top, self.left,
+                                                                                        child.slot.top,
+                                                                                        child.slot.left))
         if len(self.pile) == 0:
             # if ((self.top == CARD_HEIGTH + 10) or (self.top == 3*(CARD_HEIGTH + 10)) and abs(child.slot.left - self.left) == 0) or (((self.left == 0) or (self.left == 200)) and self.top == child.slot.top):
-            if ((abs(child.slot.top - self.top) == 220) and abs(child.slot.left - self.left) == 0) or (((self.left == 0) or (self.left == 200)) and self.top == child.slot.top):
+            if ((abs(child.slot.top - self.top) == 220) and abs(child.slot.left - self.left) == 0) or (
+                    ((self.left == 0) or (self.left == 200)) and self.top == child.slot.top):
                 print("can_place 2 : True")
                 return True
-            return (abs(child.slot.left - self.left) == 100 and abs(child.slot.top - self.top) == 0) or (abs(child.slot.left - self.left) == 0 and abs(child.slot.top - self.top) == 110)
+            return (abs(child.slot.left - self.left) == 100 and abs(child.slot.top - self.top) == 0) or (
+                    abs(child.slot.left - self.left) == 0 and abs(child.slot.top - self.top) == 110)
 
 
 # flet main
