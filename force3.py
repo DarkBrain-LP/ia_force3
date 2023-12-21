@@ -108,30 +108,36 @@ class Card(ft.GestureDetector):
             # check if we can move two slots contents from left to right
             if not self.game.initiating and slot.left == 0 and self.game.start_left == 200 and slot.top == self.slot.top:
                 # swap the slots
-                print("===> swap the slots")
-                # putain = self.game.get_horizontal_slots()
-                # putain[0], putain[1] = putain[1], putain[0]
-                # putain[1], putain[2] = putain[2], putain[1]
-                # self.game.update()
-                # return
+                print("===> right to left")
                 draggables = self.get_draggable_items()
                 for el in draggables:
-                    el.left = self.game.start_left - 100  # slot.left
-                    # el.top = slot.top + draggables.index(el) * CARD_OFFSET
-                    # if type(el) == Card:
-                    #     el.update()
+                    el.left = self.game.start_left - 100
+                    el.top = slot.top + draggables.index(el) * CARD_OFFSET
                     self.game.update()
-                self.slot.left = self.game.start_left - 100 # mettre a jour le 100 en même temps ???
+                self.slot.left = self.game.start_left - 100  # mettre a jour le 100 en même temps ???
                 self.game.update()
                 slot.left = self.game.start_left
                 slot.update()
+                "The following commented code's purpose was to reset the middle slot's pile elements to their correct " \
+                "top position"
+                # if slot.pile is not None and len(slot.pile) != 0:
+                #     slot_draggables = slot.pile[0].get_draggable_items()
+                #     i = 0
+                #     for el in slot_draggables:
+                #         el.left = self.game.start_left
+                #         el.top = slot.top + i * CARD_OFFSET  # slot_draggables.index(el) * CARD_OFFSET
+                #         i += 1
+                #         self.game.update()
+                #         # el.update()
                 slot_els = slot.pile
                 for el in slot_els:
                     el.left = self.game.start_left
-                    # el.update()
+                    el.top = slot.top + slot_els.index(el) * CARD_OFFSET
+                # el.update()
                 self.game.update()
-                    # self.game.update()
+                # self.game.update()
                 # get the horizontal slots
+                self.game.start_top = slot.top
                 horiz_slots = self.game.get_horizontal_slots()
                 # sort by left
                 horiz_slots.sort(key=lambda x: x.left, reverse=True)
@@ -147,24 +153,55 @@ class Card(ft.GestureDetector):
                 index = 3 * (-1 + self.game.start_top // 110)
                 self.game.slots[index] = horiz_slots
                 reset_slots[1] = self.slot
-                self.game.slots[index+1] = self.slot
+                self.game.slots[index + 1] = self.slot
                 reset_slots[2] = slot
-                self.game.slots[index+2] = slot
+                self.game.slots[index + 2] = slot
 
-                # for i in range(len(horiz_slots)-1):
-                #     horiz_slots[i].swap(horiz_slots[i + 2])
-                #     # wait for 2 seconds don't use fl.sleep in the main thread
-                #     # ft.sleep(2)
-                #     horiz_slots[i].update()
-                #     horiz_slots[i + 1].update()
-                #     self.game.update()
-                # horiz_slots[0].swap(horiz_slots[1])
-                # horiz_slots[1].swap(horiz_slots[2])
-                # for i in self.game.get_horizontal_slots():
-                #     print("{} -> pile={}".format(i+1, i.pile))
-                # self.slot.swap(slot)
                 self.game.update()
                 return
+
+            # check if we can move two slots contents from right to left
+            if not self.game.initiating and slot.left == 200 and self.game.start_left == 0 and slot.top == self.slot.top:
+                print("===> left to right")
+                draggables = self.get_draggable_items()
+                for el in draggables:
+                    el.left = self.game.start_left + 100
+                    # TODO : place thee elements at the right top position
+                    el.top = slot.top
+                    self.game.update()
+                self.slot.left = self.game.start_left + 100  # mettre a jour le 100 en même temps ???
+                self.game.update()
+                slot.left = self.game.start_left
+                # slot.update()
+                slot_els = slot.pile
+                for el in slot_els:
+                    el.left = self.game.start_left
+                    # el.update()
+                self.game.update()
+                # self.game.update()
+                # get the horizontal slots
+                horiz_slots = self.game.get_horizontal_slots()
+                # sort by left
+                horiz_slots.sort(key=lambda x: x.left, reverse=True)
+                horiz_slots = horiz_slots[1]
+                horiz_slots.left = 200
+                horiz_slots.update()
+                middle_items = horiz_slots.pile
+                for el in middle_items:
+                    el.left = 200
+
+                reset_slots = self.game.get_horizontal_slots()
+                reset_slots[0] = horiz_slots
+                index = 3 * (-1 + self.game.start_top // 110)
+                self.game.slots[index] = slot
+                reset_slots[1] = self.slot
+                self.game.slots[index + 1] = self.slot
+                reset_slots[2] = slot
+                self.game.slots[index + 2] = horiz_slots
+
+                self.game.update()
+                return
+
             for item in draggable_items:
                 item.top = slot.top + draggable_items.index(item) * CARD_OFFSET
                 item.left = slot.left
@@ -231,7 +268,7 @@ class Card(ft.GestureDetector):
 
 
 class Pawn(Card):
-    def __init__(self, game, card: Card, top, left, color, border_radius=50, height=CARD_HEIGTH/2, width=CARD_WIDTH):
+    def __init__(self, game, card: Card, top, left, color, border_radius=50, height=CARD_HEIGTH / 2, width=CARD_WIDTH):
         super().__init__(game=game, color=color, border_radius=border_radius, height=height, width=width)
         self.top = top
         self.left = left
@@ -283,7 +320,8 @@ class Game(ft.Stack):
     # method that returns the slots of the current horizontal line according to the start_top attribute
     def get_horizontal_slots(self) -> list:
         """Returns the slots of the current horizontal line according to the start_top attribute"""
-        return [slt for slt in self.slots if slt.top == self.start_top]
+        a = [slt for slt in self.slots if slt.top == self.start_top]
+        return a
 
     # method that returns the slots of the current vertical line according to the start_left attribute
 
