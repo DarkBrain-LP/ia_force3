@@ -202,6 +202,87 @@ class Card(ft.GestureDetector):
                 self.game.update()
                 return
 
+            # check if we can move two slots contents from up to down
+            if not self.game.initiating and slot.top == 330 and self.game.start_top == 110 and slot.left == self.slot.left:
+                print("===> up to down")
+                draggables = self.get_draggable_items()
+                for el in draggables:
+                    el.top = self.game.start_top + 110
+                    # TODO : place thee elements at the right top position
+                    el.left = slot.left
+                    self.game.update()
+                self.slot.top = self.game.start_top + 110
+                self.game.update()
+                slot.top = self.game.start_top
+                # slot.update()
+                slot_els = slot.pile
+                for el in slot_els:
+                    el.top = self.game.start_top
+                    # el.update()
+                self.game.update()
+                # self.game.update()
+                # get the horizontal slots
+                vert_slots = self.game.get_vertical_slots()
+                # sort by left
+                vert_slots.sort(key=lambda x: x.top, reverse=True)
+                vert_slots = vert_slots[1]
+                vert_slots.top = 330
+                vert_slots.update()
+                middle_items = vert_slots.pile
+                for el in middle_items:
+                    el.top = 330
+                reset_slots = self.game.get_vertical_slots()
+                reset_slots[0] = vert_slots
+                index = self.game.start_left // 100
+                self.game.slots[index] = slot
+                reset_slots[1] = self.slot
+                self.game.slots[index + 3] = self.slot
+                reset_slots[2] = slot
+                self.game.slots[index + 6] = vert_slots
+
+                self.game.update()
+                return
+
+            # check if we can move two slots contents from down to up
+            if not self.game.initiating and slot.top == 110 and self.game.start_top == 330 and slot.left == self.slot.left:
+                print("===> down to up")
+                draggables = self.get_draggable_items()
+                for el in draggables:
+                    el.top = self.game.start_top - 110
+                    # TODO : place thee elements at the right top position
+                    el.left = slot.left
+                    self.game.update()
+                self.slot.top = self.game.start_top - 110
+                self.game.update()
+                slot.top = self.game.start_top
+                # slot.update()
+                slot_els = slot.pile
+                for el in slot_els:
+                    el.top = self.game.start_top
+                    # el.update()
+                self.game.update()
+                # self.game.update()
+                # get the horizontal slots
+                vert_slots = self.game.get_vertical_slots()
+                # sort by left
+                vert_slots.sort(key=lambda x: x.top, reverse=True)
+                vert_slots = vert_slots[1]
+                vert_slots.top = 110
+                vert_slots.update()
+                middle_items = vert_slots.pile
+                for el in middle_items:
+                    el.top = 110
+                reset_slots = self.game.get_vertical_slots()
+                reset_slots[0] = vert_slots
+                index = self.game.start_left // 100
+                self.game.slots[index] = vert_slots
+                reset_slots[1] = self.slot
+                self.game.slots[index + 3] = self.slot
+                reset_slots[2] = slot
+                self.game.slots[index + 6] = slot
+
+                self.game.update()
+                return
             for item in draggable_items:
                 item.top = slot.top + draggable_items.index(item) * CARD_OFFSET
                 item.left = slot.left
