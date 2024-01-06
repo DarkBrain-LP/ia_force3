@@ -114,6 +114,11 @@ class Card(ft.GestureDetector):
             if not self.game.initiating and slot.left == 0 and self.game.start_left == 200 and slot.top == self.slot.top:
                 # swap the slots
                 print("===> right to left")
+                print(self.game.nb_moves_after_two_moves)
+                if not self.game.can_make_hor_two_moves:
+                    self.bounce_back()
+                    return
+
                 draggables = self.get_draggable_items()
                 for el in draggables:
                     el.left = self.game.start_left - 100
@@ -163,15 +168,21 @@ class Card(ft.GestureDetector):
                 self.game.slots[index + 2] = slot
 
                 self.game.update()
-                # if the state is a terminal state, then show dialog with winner
-                if self.game.ai_model.isFinal(self.game.convert_game_to_force3_board()):
-                    # TODO : show dialog with winner
-                    print("The winner is : {}".format(self.game.ai_model.get_winner(self.game.convert_game_to_force3_board())))
+                # update the two moves counter
+                self.game.nb_moves_after_two_moves = 1
+                self.game.can_make_hor_two_moves = False
+                self.game.can_make_vert_two_moves = True
+
                 return
 
             # check if we can move two slots contents from right to left
             if not self.game.initiating and slot.left == 200 and self.game.start_left == 0 and slot.top == self.slot.top:
                 print("===> left to right")
+                print(self.game.nb_moves_after_two_moves)
+                if not self.game.can_make_hor_two_moves:
+                    self.bounce_back()
+                    return
+
                 draggables = self.get_draggable_items()
                 for el in draggables:
                     el.left = self.game.start_left + 100
@@ -209,11 +220,20 @@ class Card(ft.GestureDetector):
                 self.game.slots[index + 2] = horiz_slots
 
                 self.game.update()
+                # update the two moves counter
+                self.game.nb_moves_after_two_moves = 1
+                self.game.can_make_hor_two_moves = False
+                self.game.can_make_vert_two_moves = True
                 return
 
             # check if we can move two slots contents from up to down
             if not self.game.initiating and slot.top == 330 and self.game.start_top == 110 and slot.left == self.slot.left:
                 print("===> up to down")
+                print(self.game.nb_moves_after_two_moves)
+                if not self.game.can_make_vert_two_moves:
+                    self.bounce_back()
+                    return
+
                 draggables = self.get_draggable_items()
                 for el in draggables:
                     el.top = self.game.start_top + 110
@@ -250,11 +270,19 @@ class Card(ft.GestureDetector):
                 self.game.slots[index + 6] = vert_slots
 
                 self.game.update()
+                # update the two moves counter
+                self.game.nb_moves_after_two_moves = 1
+                self.game.can_make_vert_two_moves = False
+                self.game.can_make_hor_two_moves = True
                 return
 
             # check if we can move two slots contents from down to up
-            if not self.game.initiating and slot.top == 110 and self.game.start_top == 330 and slot.left == self.slot.left:
+            if not self.game.initiating  and slot.top == 110 and self.game.start_top == 330 and slot.left == self.slot.left:
                 print("===> down to up")
+                print(self.game.nb_moves_after_two_moves)
+                if not self.game.can_make_vert_two_moves:
+                    self.bounce_back()
+                    return
                 draggables = self.get_draggable_items()
                 for el in draggables:
                     el.top = self.game.start_top - 110
@@ -291,7 +319,13 @@ class Card(ft.GestureDetector):
                 self.game.slots[index + 6] = slot
 
                 self.game.update()
+                # update the two moves counter
+                self.game.nb_moves_after_two_moves = 1
+                self.game.can_make_vert_two_moves = False
+                self.game.can_make_hor_two_moves = True
                 return
+            
+            # One move handler
             for item in draggable_items:
                 item.top = slot.top + draggable_items.index(item) * CARD_OFFSET
                 item.left = slot.left
@@ -299,8 +333,10 @@ class Card(ft.GestureDetector):
                     item.slot.pile.remove(item)
                 item.slot = slot
                 slot.pile.append(item)
-                # self.game.update()
-                # slot.update()
+                # update the two moves counter
+                self.game.nb_moves_after_two_moves = 0
+                self.game.can_make_hor_two_moves = True
+                self.game.can_make_vert_two_moves = True
 
         except Exception as e:
             pass
@@ -315,6 +351,11 @@ class Card(ft.GestureDetector):
 
     def start_drag(self, e: ft.DragStartEvent):
         # TODO : add the slot pile to the game instance to remove the card/pawn from it after drop is completed
+        # disable the drag if it is not the current player's turn
+        # if not self.game.is_current_player_pawn(self):
+        #     self.bounce_back()
+        #     return
+        
         self.game.start_top = e.control.top
         self.game.start_left = e.control.left
         self.move_on_top()
@@ -322,6 +363,9 @@ class Card(ft.GestureDetector):
         self.game.update()
 
     def drag(self, e: ft.DragUpdateEvent):
+        if not self.game.is_current_player_pawn(self):
+            self.bounce_back()
+            return
         draggable_items = self.get_draggable_items()
         for item in draggable_items:
             # print("offset = {}".format(draggable_items.index(item) * CARD_OFFSET))
@@ -354,6 +398,9 @@ class Card(ft.GestureDetector):
                     # TODO : show dialog with winner
                     # print("The winner is : {}".format(self.game.ai_model.get_winner(self.game.convert_game_to_force3_board())))
                     self.game.show_game_over_dialog()
+                
+                self.game.current_player = 3 - self.game.current_player
+                print("next_player = {}".format(self.game.current_player))
                 return
         self.bounce_back()
         # print board
@@ -388,6 +435,11 @@ class Pawn(Card):
             self.slot.pile.remove(self)
         self.slot = slot
         slot.pile.append(self)
+        
+        # update the two moves counter
+        self.game.nb_moves_after_two_moves = 0
+        self.game.can_make_hor_two_moves = True
+        self.game.can_make_vert_two_moves = True
         # print("after_place_pawn", "dest_slot_pile={}, pawn_slot_pile={}".format(slot.pile, self.slot.pile))
         if not self.game.initiating:
             slot.update()
@@ -419,10 +471,24 @@ class Game(ft.Stack):
         self.width = 1000
         self.height = 1000
         self.initiating = True
-        self.create_cards([[1, -1, -1],
-                [-1, -1, -1],
-                [0, -1, 2]])
-        self.ai_model = Force3()
+        self.current_player = 1
+        self.nb_moves_after_two_moves = 0
+        self.can_make_hor_two_moves = False
+        self.can_make_vert_two_moves = False
+        self.ai_model = Force3()# [[1, -1, -1],
+                                #         [-1, -1, -1],
+                                #         [0, -1, 2]]
+        self.create_cards(self.ai_model.plateau)
+
+    # method that return to get if the pawn that is trying to be moved is for the current player
+    def is_current_player_pawn(self, card: Card) -> bool:
+        """Returns True if the pawn that is trying to be moved is for the current player"""
+        if card.color == ft.colors.BROWN:
+            return True
+        if self.current_player == 1:
+            return card.color == ft.colors.BLUE
+        else:
+            return card.color == ft.colors.RED
 
     # method that returns the slots of the current horizontal line according to the start_top attribute
     def get_horizontal_slots(self) -> list:

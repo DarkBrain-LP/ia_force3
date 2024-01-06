@@ -348,15 +348,27 @@ class Force3:
             diagonal_aligned = set(diagonal_aligned)
             vertical_aligned = set(vertical_aligned)
             horizontal_aligned = set(horizontal_aligned)
+            print("diagonal_aligned {}".format(diagonal_aligned))
+            print("vertical_aligned {}".format(vertical_aligned))
+            print("horizontal_aligned {}".format(horizontal_aligned))
 
-            if len(diagonal_aligned) == 3 or len(vertical_aligned) == 3 or len(horizontal_aligned) == 3:
+            if len(vertical_aligned) == 3 or len(horizontal_aligned) == 3:
                 return True
+            if len(diagonal_aligned) == 3:
+                # check if each point is diagonaly aligned with the other two
+                copy = diagonal_aligned.copy()
+                for el in diagonal_aligned:
+                    copy.remove(el)
+                    if not all(is_diagolally_aligned(el, sq) for sq in copy):
+                        return False
         return False
         player = self.current_player
         pawns = self.getPlayerPawns()
         return self.f(pawns) == 1000
 
-    
+def is_diagolally_aligned(l1, l2):
+    """check if two points are aligned diagonally"""
+    return abs(l1[0] - l2[0]) == abs(l1[1] - l2[1])
 
 def minimax(game:Force3, position:list, maximizingPlayer:bool, depth=-1, alpha=-1000, beta=1000):
     
@@ -392,23 +404,23 @@ def minimax(game:Force3, position:list, maximizingPlayer:bool, depth=-1, alpha=-
 
 if __name__ == "__main__":
     game = Force3()
-    print(game.isFinal([[1, -1, 2], [-1, -1, 2], [0, 1, 2]]))
-    game.plateau = [[1, -1, -1],
-                [2, 0, -1],
-                [-1, 1, 2]]
+    print(game.isFinal([[2, -1, 1], [0, 1, 2], [-1, -1, 1]]))
+    # game.plateau = [[1, -1, -1],
+    #             [2, 0, -1],
+    #             [-1, 1, 2]]
    
-    depth =4
-    plateau = [[1, -1, -1],
-                [2, 0, -1],
-                [-1, 1, 2]]
-    for i in range(0,100):
-        start = time.time()
-        maximizing = True if i%2 == 0 else False
-        minmax_return = minimax(game, plateau, maximizingPlayer=maximizing, depth=depth)
-        plateau = minmax_return[1]
-        # print(minmax_return)
-        end = time.time()
-        print("player: {}, point={} time={}".format(2 if maximizing else 1, minmax_return[0],end-start))
-        for mv in minmax_return[1]:
-            print('\t',mv)
+    # depth =4
+    # plateau = [[1, -1, -1],
+    #             [2, 0, -1],
+    #             [-1, 1, 2]]
+    # for i in range(0,100):
+    #     start = time.time()
+    #     maximizing = True if i%2 == 0 else False
+    #     minmax_return = minimax(game, plateau, maximizingPlayer=maximizing, depth=depth)
+    #     plateau = minmax_return[1]
+    #     # print(minmax_return)
+    #     end = time.time()
+    #     print("player: {}, point={} time={}".format(2 if maximizing else 1, minmax_return[0],end-start))
+    #     for mv in minmax_return[1]:
+    #         print('\t',mv)
    
