@@ -169,6 +169,7 @@ class Force3:
         if state is None:
             state = self.plateau
         # print("x,y = {} {}".format(x, y))
+        # print("postSurCarreVide_plateau : {}".format(state))
         for i in range(3):
             for j in range(3):
                 if state[i][j] == -1:
@@ -187,11 +188,12 @@ class Force3:
             player = self.current_player
         if state is None:
             state = self.plateau
+        # print("movePion_plateau : {}".format(state))
         possible_states = []
         for i in range(3):
             for j in range(3):
                 if state[i][j] == player: #if the case is empty
-                    possible_states += self.poseSurCarreVideo(i, j, player)
+                    possible_states += self.poseSurCarreVideo(i, j, player, state=state)
         return possible_states
 
     def move(self, state=None, player=None):
@@ -202,6 +204,10 @@ class Force3:
         if player is None:
             player = self.current_player
         # print("move_plateau : {}".format(state))
+        # if sum([row.count(player) for row in state]) == 3:
+        #     return self.movePion(state, player) + self.moveOneCase(state=state, player=player) + self.moveTwoCases(state, player)
+        # else:
+        #     return self.posePion(state=state, player=player)
         return self.posePion(state, player) + self.movePion(state, player) + self.moveOneCase(state=state, player=player) + self.moveTwoCases(state, player)
 
     def getPlayerPawns(self, position=None, player=None):
@@ -348,19 +354,22 @@ class Force3:
             diagonal_aligned = set(diagonal_aligned)
             vertical_aligned = set(vertical_aligned)
             horizontal_aligned = set(horizontal_aligned)
-            print("diagonal_aligned {}".format(diagonal_aligned))
-            print("vertical_aligned {}".format(vertical_aligned))
-            print("horizontal_aligned {}".format(horizontal_aligned))
+            # print("diagonal_aligned {}".format(diagonal_aligned))
+            # print("vertical_aligned {}".format(vertical_aligned))
+            # print("horizontal_aligned {}".format(horizontal_aligned))
 
             if len(vertical_aligned) == 3 or len(horizontal_aligned) == 3:
                 return True
             if len(diagonal_aligned) == 3:
                 # check if each point is diagonaly aligned with the other two
-                copy = diagonal_aligned.copy()
-                for el in diagonal_aligned:
-                    copy.remove(el)
-                    if not all(is_diagolally_aligned(el, sq) for sq in copy):
-                        return False
+                for it1 in diagonal_aligned:
+                    for it2 in diagonal_aligned:
+                        if it1 == it2:
+                            continue
+                        if not is_diagolally_aligned(it1, it2):
+                            return False
+                # if all(abs(l[i][0] - l[i-1][0]) == abs(l[i][1] - l[i-1][1]) for i in range(1, len(l))):
+                return True
         return False
         player = self.current_player
         pawns = self.getPlayerPawns()
@@ -404,7 +413,25 @@ def minimax(game:Force3, position:list, maximizingPlayer:bool, depth=-1, alpha=-
 
 if __name__ == "__main__":
     game = Force3()
-    print(game.isFinal([[2, -1, 1], [0, 1, 2], [-1, -1, 1]]))
+    print(game.isFinal([[0, -1, 1], [-1, 1, -1], [1, -1, 1]]))
+    game.current_player = 2
+    # print(game.move([[2, -1, 1], 
+    #                     [0, 1, 2], 
+    #                     [-1, -1, 1]], 2))
+    state = [[2, -1, 1], 
+                        [0, 1, 2], 
+                        [-1, -1, 1]]
+    player = 2
+    # print(game.posePion(state, player)) 
+    # print()
+    # print(game.movePion(state, player)) 
+    # print()
+    # print(game.moveOneCase(state=state, player=player))
+    # print()
+    # print(game.moveTwoCases(state, player))
+    # print()
+
+    print(minimax(game,[[-1, -1, -1], [-1, 0, -1], [-1, -1, 1]], True, depth=3))
     # game.plateau = [[1, -1, -1],
     #             [2, 0, -1],
     #             [-1, 1, 2]]

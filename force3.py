@@ -1,8 +1,8 @@
 from datetime import time
 import time as tm
 import flet as ft
-
-from model import Force3
+from copy import deepcopy
+from model import Force3, minimax
 
 CARD_WIDTH = 70
 CARD_HEIGTH = 100
@@ -70,46 +70,7 @@ class Card(ft.GestureDetector):
         draggable_items = self.get_draggable_items()
         # TODO : check if it is a two move action. If it is then move the pawns on the line
         try:
-            # if not self.game.initiating and slot.left == 0 and slot.top == self.slot.top:
-            #     print("place card : It is a two horizontal right to left move !!!")
-            #     # get the horizontal items
-            # elif not self.game.initiating and slot.left == 200 and slot.top == self.slot.top:
-            #     print("place card : It is a two horizontal left to right move !!!")
-            #     # get the horizontal slots
-            #     horiz_slots = [slt for slt in self.game.slots if slt.top == self.slot.top and slt.left != 200]
-            #     # horiz_slots.sort(key=lambda x: x.left, reverse=True)
-            #     for card_slot in self.game.slots:
-            #         if card_slot.top == self.slot.top and card_slot.left != 200:
-            #             # foreach slot, move the cards(with its pawn) to the right
-            #             slot_contents = card_slot.pile
-            #             for slot_item in slot_contents:
-            #                 if type(slot_item) == Card:
-            #                     draggable_items1 = slot_item.get_draggable_items()  # gets the slot items(card + pawn)
-            #                     for el in draggable_items1:
-            #                         # el.top = slot.top + draggable_items.index(el) * CARD_OFFSET
-            #                         if (self.game.start_left - el.left) % 100 != 0: # supposing that the user cannot exactly place the card in position 0, 100 or 200 (0.xx, 100.xx, 200.xx instead)
-            #                             el.left = self.game.start_left - 100
-            #                         else:
-            #                             el.left = el.left + 100  # move them to the right
-            #                         self.game.controls.remove(el)
-            #                         self.game.controls.append(el)
-            #                         self.game.update()
-            #                         # if el.slot is not None:
-            #                         #     el.slot.pile.remove(el)
-            #                         # el.slot = slot
-            #                         # slot.pile.append(el)
-            #             # break
-            #     # if ((slot.left == 0) or (slot.left == 200)) and slot.top == self.slot.top:
-            #     #     print("place card : It is a two horizontal move !!!")
-            #     # get the horizontal items
-            #     horizontal_items = []
-            #
-            # elif not self.game.initiating and self.slot.top - slot.top == 220 and abs(self.slot.left - slot.left) == 0:
-            #     print("place card : It is a two vertical down to up move !!!")
-            # elif not self.game.initiating and self.slot.top - slot.top == -220 and abs(self.slot.left - slot.left) == 0:
-            #     print("place card : It is a two vertical up to down move !!!")
-            # else:
-
+            
             # check if we can move two slots contents from left to right
             if not self.game.initiating and slot.left == 0 and self.game.start_left == 200 and slot.top == self.slot.top:
                 # swap the slots
@@ -340,14 +301,6 @@ class Card(ft.GestureDetector):
 
         except Exception as e:
             pass
-        # if slot.can_place(self):
-        #     self.top = slot.top
-        #     self.left = slot.left
-        #     if self.slot is not None:
-        #         self.slot.pile.remove(self)
-        #     self.slot = slot
-        #     slot.pile.append(self)
-        # self.game.update()
 
     def start_drag(self, e: ft.DragStartEvent):
         # TODO : add the slot pile to the game instance to remove the card/pawn from it after drop is completed
@@ -401,6 +354,32 @@ class Card(ft.GestureDetector):
                 
                 self.game.current_player = 3 - self.game.current_player
                 print("next_player = {}".format(self.game.current_player))
+                # if it is the AI's turn, then play
+                if self.game.current_player == 2:
+                    # TODO : call the AI method to play
+                    # call model to play
+                    # delete the controls
+                    # make a deepcopy of the game
+                    state = self.game.convert_game_to_force3_board()
+                    board = minimax(self.game.ai_model, state, True, depth=5)[1]
+                    new_game = Game(plateau=board,page=self.game.page, vert_moves=self.game.can_make_vert_two_moves, hor_moves=self.game.can_make_hor_two_moves, current_player=self.game.current_player)
+                    self.game.page.controls.remove(self.game)
+                    self.game.page.update()
+                    # deep_copy = deepcopy(self.game)
+                    new_game.page.add(new_game)
+                    # self.game.page.update()
+                    new_game.page.update()
+                    #check if the game is over
+                    if new_game.is_game_over():
+                        # TODO : show dialog with winner
+                        # print("The winner is : {}".format(self.game.ai_model.get_winner(self.game.convert_game_to_force3_board())))
+                        new_game.show_game_over_dialog()
+
+
+                    self.game.delete_controls()
+                    del self.game
+                    # self.game.ai_play()
+                    # self.game.page.add(self.game)
                 return
         self.bounce_back()
         # print board
@@ -456,7 +435,7 @@ class Pawn(Card):
 
 
 class Game(ft.Stack):
-    def __init__(self):
+    def __init__(self, plateau=None, page=None, vert_moves=False, hor_moves=False, current_player=1):
         super().__init__()
         self.slots = []
         self.game_cards = []
@@ -471,15 +450,23 @@ class Game(ft.Stack):
         self.width = 1000
         self.height = 1000
         self.initiating = True
-        self.current_player = 1
+        self.current_player = current_player
         self.nb_moves_after_two_moves = 0
-        self.can_make_hor_two_moves = False
-        self.can_make_vert_two_moves = False
+        self.can_make_hor_two_moves = hor_moves
+        self.can_make_vert_two_moves = vert_moves
         self.ai_model = Force3()# [[1, -1, -1],
                                 #         [-1, -1, -1],
                                 #         [0, -1, 2]]
-        self.create_cards(self.ai_model.plateau)
+        self.create_cards(plateau) # self.ai_model.plateau
+        self.page = page
 
+    def ai_play(self):
+        self.ai_model.current_player = 2
+        self.ai_model.plateau = self.convert_game_to_force3_board()
+        board = minimax(self.ai_model, self.ai_model.plateau, True, depth=3)[1]
+        self.ai_model.plateau = board
+        self.create_cards(board, self.can_make_vert_two_moves, self.can_make_hor_two_moves, 1)
+        self.update()
     # method that return to get if the pawn that is trying to be moved is for the current player
     def is_current_player_pawn(self, card: Card) -> bool:
         """Returns True if the pawn that is trying to be moved is for the current player"""
@@ -490,26 +477,27 @@ class Game(ft.Stack):
         else:
             return card.color == ft.colors.RED
 
-    # method that returns the slots of the current horizontal line according to the start_top attribute
-    def get_horizontal_slots(self) -> list:
-        """Returns the slots of the current horizontal line according to the start_top attribute"""
-        a = [slt for slt in self.slots if slt.top == self.start_top]
-        return a
+    def delete_controls(self):
+        """Deletes the controls of the game"""
+        for control in self.controls:
+            self.controls.remove(control)
+        self.controls = []
+        # self.screen.fill((0, 0, 0))
 
-    # method that returns the slots of the current vertical line according to the start_left attribute
-
-    def get_vertical_slots(self) -> list:
-        """Returns the slots of the current vertical line according to the start_left attribute"""
-        return [slt for slt in self.slots if slt.left == self.start_left]
-
-    def create_cards(self, board: list[list[int]]=None):
+    def create_cards(self, board: list[list[int]]=None, vert_moves=False, hor_moves=False, current_player=1):
         # create 9 slots
         self.initiating = True
+        self.current_player = current_player
+        self.nb_moves_after_two_moves = 0
+        self.can_make_hor_two_moves = hor_moves
+        self.can_make_vert_two_moves = vert_moves
         print("create_cards", "board={}".format(board))
-        print("create_cards", "controls={}".format(self.controls))
+        # print("create_cards", "controls={}".format(self.controls))
         # on supprime les éléments de l'interface si une configuration de plateau a été fournie
         # if board is not None:
-        self.controls = []
+        if self.controls != []:
+            self.update()
+            self.controls = []
 
         # let's create the slots that will contain the cards
         self.slots = []
@@ -594,6 +582,17 @@ class Game(ft.Stack):
         self.controls.extend(self.pawn2_cards)
 
         self.initiating = False
+ # method that returns the slots of the current horizontal line according to the start_top attribute
+    def get_horizontal_slots(self) -> list:
+        """Returns the slots of the current horizontal line according to the start_top attribute"""
+        a = [slt for slt in self.slots if slt.top == self.start_top]
+        return a
+
+    # method that returns the slots of the current vertical line according to the start_left attribute
+
+    def get_vertical_slots(self) -> list:
+        """Returns the slots of the current vertical line according to the start_left attribute"""
+        return [slt for slt in self.slots if slt.left == self.start_left]
 
     def redraw_cards(self, board: list[list[int]]):
         # create 9 slots
@@ -696,6 +695,17 @@ class Game(ft.Stack):
     
     def show_game_over_dialog(self):
         """Shows a dialog when the game is over"""
+        tm.sleep(3)
+        new_game = Game(page=self.page)
+        self.page.controls.remove(self)
+        self.page.update()
+        # deep_copy = deepcopy(self.game)
+        new_game.page.add(new_game)
+        # self.game.page.update()
+        new_game.page.update()
+                    
+        # self.create_cards()
+        return
         if self.is_game_over():
             dlg = ft.AlertDialog(
                 modal=True,
@@ -708,12 +718,15 @@ class Game(ft.Stack):
                 on_dismiss=lambda e: print("Modal dialog dismissed!"),
             )
             self.dialog = dlg
+            self.page.add(dlg)
             dlg.open = True
-            self.controls.append(dlg)
+            # self.controls.append(dlg)
             self.update()
     def close_dlg(self,e):
         self.dialog.open = False
-        self.controls.pop()
+        self.page.controls.remove(self.dialog)
+        self.page.update()
+        # self.controls.remove(self.dialog)
         self.update()
         self.create_cards()
         self.update()
@@ -785,31 +798,55 @@ class Slot(ft.Container):
 
 # flet main
 def main(page: ft.Page):
-    force3 = Game()
+    force3 = Game(page=page)
+    
     
     page.add(force3)
+    # btn1 = ft.ElevatedButton(text="Elevated button"),
+    # btn2 = ft.ElevatedButton("Disabled button", disabled=True),
+    
+    # # add the force3 game and the buttons to the a column
+    # page.add(ft.Column(
+    #     controls=[
+    #         force3,
+    #         btn1,
+    #         btn2
+    #     ]
+    # ))
+    # page.add(dlg_modal)
     page.update()
 
 
-    def open_dlg_modal(e):
-        page.dialog = dlg_modal
-        dlg_modal.open = True
-        page.update()
+    # def open_dlg_modal(e):
+    #     page.dialog = dlg_modal
+    #     dlg_modal.open = True
+    #     page.update()
 
-    def close_dlg(e):
-        dlg_modal.open = False
-        page.update()
-    dlg_modal = ft.AlertDialog(
-        modal=True,
-        title=ft.Text("Please confirm"),
-        content=ft.Text("Do you really want to delete all those files?"),
-        actions=[
-            ft.TextButton("Yes", on_click=close_dlg),
-            ft.TextButton("No", on_click=close_dlg),
-        ],
-        actions_alignment=ft.MainAxisAlignment.END,
-        on_dismiss=lambda e: print("Modal dialog dismissed!"),
-    )
+    # def close_dlg(e):
+    #     dlg_modal.open = False
+    #     page.update()
+    # dlg_modal = ft.AlertDialog(
+    #     modal=True,
+    #     title=ft.Text("Please confirm"),
+    #     content=ft.Text("Do you really want to delete all those files?"),
+    #     actions=[
+    #         ft.TextButton("Yes", on_click=close_dlg),
+    #         ft.TextButton("No", on_click=close_dlg),
+    #     ],
+    #     actions_alignment=ft.MainAxisAlignment.END,
+    #     on_dismiss=lambda e: print("Modal dialog dismissed!"),
+    # )
+
+
+    
+    # tm.sleep(2)
+    # # delete the force3 game
+    # page.controls.remove(force3)
+    # page.update()
+
+    # tm.sleep(2)
+    # page.add(force3)
+    # page.update()
     
 
 
