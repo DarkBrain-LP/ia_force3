@@ -361,7 +361,7 @@ class Card(ft.GestureDetector):
                     # delete the controls
                     # make a deepcopy of the game
                     state = self.game.convert_game_to_force3_board()
-                    board = minimax(self.game.ai_model, state, True, depth=5)[1]
+                    board = minimax(self.game.ai_model, state, True, depth=4)[1]
                     new_game = Game(plateau=board,page=self.game.page, vert_moves=self.game.can_make_vert_two_moves, hor_moves=self.game.can_make_hor_two_moves, current_player=self.game.current_player)
                     self.game.page.controls.remove(self.game)
                     self.game.page.update()
@@ -459,6 +459,7 @@ class Game(ft.Stack):
                                 #         [0, -1, 2]]
         self.create_cards(plateau) # self.ai_model.plateau
         self.page = page
+        # self.ai_game()
 
     def ai_play(self):
         self.ai_model.current_player = 2
@@ -467,6 +468,25 @@ class Game(ft.Stack):
         self.ai_model.plateau = board
         self.create_cards(board, self.can_make_vert_two_moves, self.can_make_hor_two_moves, 1)
         self.update()
+
+    def ai_game(self):
+        """AI vs AI game"""
+        new_game = None
+        while not self.is_game_over():
+            state = self.convert_game_to_force3_board()
+            board = minimax(self.ai_model, state, self.ai_model.current_player%2 == 0, depth=4)[1]
+            new_game = Game(plateau=board,page=self.page, vert_moves=self.can_make_vert_two_moves, hor_moves=self.can_make_hor_two_moves, current_player=self.current_player)
+            self.page.controls.remove(self.game)
+            self.page.update()
+            # deep_copy = deepcopy(self.game)
+            new_game.page.add(new_game)
+            # self.game.page.update()
+            new_game.page.update()
+            tm.sleep(3)
+            #check if the game is over
+            self.ai_model.current_player += 1
+        new_game.show_game_over_dialog()
+
     # method that return to get if the pawn that is trying to be moved is for the current player
     def is_current_player_pawn(self, card: Card) -> bool:
         """Returns True if the pawn that is trying to be moved is for the current player"""
@@ -800,54 +820,27 @@ class Slot(ft.Container):
 def main(page: ft.Page):
     force3 = Game(page=page)
     
-    
     page.add(force3)
-    # btn1 = ft.ElevatedButton(text="Elevated button"),
-    # btn2 = ft.ElevatedButton("Disabled button", disabled=True),
     
-    # # add the force3 game and the buttons to the a column
-    # page.add(ft.Column(
-    #     controls=[
-    #         force3,
-    #         btn1,
-    #         btn2
-    #     ]
-    # ))
-    # page.add(dlg_modal)
     page.update()
-
-
-    # def open_dlg_modal(e):
-    #     page.dialog = dlg_modal
-    #     dlg_modal.open = True
-    #     page.update()
-
-    # def close_dlg(e):
-    #     dlg_modal.open = False
-    #     page.update()
-    # dlg_modal = ft.AlertDialog(
-    #     modal=True,
-    #     title=ft.Text("Please confirm"),
-    #     content=ft.Text("Do you really want to delete all those files?"),
-    #     actions=[
-    #         ft.TextButton("Yes", on_click=close_dlg),
-    #         ft.TextButton("No", on_click=close_dlg),
-    #     ],
-    #     actions_alignment=ft.MainAxisAlignment.END,
-    #     on_dismiss=lambda e: print("Modal dialog dismissed!"),
-    # )
-
-
-    
-    # tm.sleep(2)
-    # # delete the force3 game
-    # page.controls.remove(force3)
-    # page.update()
-
-    # tm.sleep(2)
-    # page.add(force3)
-    # page.update()
-    
+    new_game = None
+    turn = 0
+    while not force3.is_game_over():
+        state = force3.convert_game_to_force3_board()
+        board = minimax(force3.ai_model, state, turn%2 == 0, depth=5)[1]
+        new_game = Game(plateau=board,page=force3.page, vert_moves=force3.can_make_vert_two_moves, hor_moves=force3.can_make_hor_two_moves, current_player=turn%2+1)
+        page.controls.remove(force3)
+        page.update()
+        # deep_copy = deepcopy(force3.game)
+        force3 = new_game
+        page.add(force3)
+        # force3.game.page.update()
+        page.update()
+        tm.sleep(3)
+        #check if the game is over
+        # force3.ai_model.current_player += 1
+        turn += 1
+    new_game.show_game_over_dialog()
 
 
 ft.app(name="Force3", target=main)

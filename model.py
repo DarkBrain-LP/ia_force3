@@ -27,6 +27,7 @@ Keyword arguments:
 argument -- description
 Return: return_description
 """
+import random
 import time
 
 
@@ -37,6 +38,8 @@ class Force3:
         self.two_case_mv_dir = -1 # represents the direction in which the two case could be moved : -1 if impossible, 0 for horizontal, 1 for vertical
         # -1 represente un carré innocupé, 0 la case vide, 1 un pion du jour 1 et 2 un pion du joueur 2
         self.plateau = [[-1, -1, -1], [-1, 0, -1], [-1, -1, -1]]
+        self.can_make_hor_two_moves = True
+        self.can_make_vert_two_moves = True
 
     def canMoveTwoCases(x,y):
         if (x,y) in [(0,0), (0,2), (2,0), (2,2)]:
@@ -95,6 +98,8 @@ class Force3:
                 new_board[x][y] = new_board[x][y-1]
                 new_board[x][y-1] = 0
                 possible_states.append(new_board)
+            self.can_make_hor_two_moves = True
+            self.can_make_vert_two_moves = True
             return possible_states
         
         except Exception as e:
@@ -113,33 +118,41 @@ class Force3:
             possible_states = []
             # clone the board
             # move up
-            if x == 0:
+            if x == 0 and self.can_make_vert_two_moves:
                 new_board = [[state[i][j] for j in range(3)] for i in range(3)]
                 for i in range(2):
                     new_board[x+i][y] = new_board[x+i+1][y]
                     new_board[x+i+1][y] = 0
                 possible_states.append(new_board)
+                self.can_make_vert_two_moves = False
+                self.can_make_hor_two_moves = True
             # move down
-            if x == 2:
+            if x == 2 and self.can_make_vert_two_moves:
                 new_board = [[state[i][j] for j in range(3)] for i in range(3)]
                 for i in range(2):
                     new_board[x-i][y] = new_board[x-i-1][y]
                     new_board[x-i-1][y] = 0
                 possible_states.append(new_board)
+                self.can_make_vert_two_moves = False
+                self.can_make_hor_two_moves = True
             # move left
-            if y == 0:
+            if y == 0 and self.can_make_hor_two_moves:
                 new_board = [[state[i][j] for j in range(3)] for i in range(3)]
                 for i in range(2):
                     new_board[x][y+i] = new_board[x][y+i+1]
                     new_board[x][y+i+1] = 0
                 possible_states.append(new_board)
+                self.can_make_hor_two_moves = False
+                self.can_make_vert_two_moves = True
             # move right
-            if y == 2:
+            if y == 2 and self.can_make_hor_two_moves:
                 new_board = [[state[i][j] for j in range(3)] for i in range(3)]
                 for i in range(2):
                     new_board[x][y-i] = new_board[x][y-i-1]
                     new_board[x][y-i-1] = 0
                 possible_states.append(new_board)
+                self.can_make_hor_two_moves = False
+                self.can_make_vert_two_moves = True
             return possible_states
         
         except Exception as e:
@@ -162,6 +175,8 @@ class Force3:
                     new_board = [[state[i][j] for j in range(3)] for i in range(3)]
                     new_board[i][j] = player
                     possible_states.append(new_board)
+        self.can_make_hor_two_moves = True
+        self.can_make_vert_two_moves = True
         return possible_states
     
     def poseSurCarreVideo(self, x, y, player, state=None):
@@ -194,6 +209,8 @@ class Force3:
             for j in range(3):
                 if state[i][j] == player: #if the case is empty
                     possible_states += self.poseSurCarreVideo(i, j, player, state=state)
+        self.can_make_hor_two_moves = True
+        self.can_make_vert_two_moves = True
         return possible_states
 
     def move(self, state=None, player=None):
@@ -204,10 +221,13 @@ class Force3:
         if player is None:
             player = self.current_player
         # print("move_plateau : {}".format(state))
-        # if sum([row.count(player) for row in state]) == 3:
-        #     return self.movePion(state, player) + self.moveOneCase(state=state, player=player) + self.moveTwoCases(state, player)
-        # else:
-        #     return self.posePion(state=state, player=player)
+            l = []
+        if sum([row.count(player) for row in state]) == 3:
+            l = self.movePion(state, player) + self.moveOneCase(state=state, player=player) + self.moveTwoCases(state, player)
+        else:
+            l = self.posePion(state=state, player=player) #+ self.moveOneCase(state=state, player=player) + self.moveTwoCases(state, player)
+        random.shuffle(l)
+        return l
         return self.posePion(state, player) + self.movePion(state, player) + self.moveOneCase(state=state, player=player) + self.moveTwoCases(state, player)
 
     def getPlayerPawns(self, position=None, player=None):
@@ -386,6 +406,7 @@ def minimax(game:Force3, position:list, maximizingPlayer:bool, depth=-1, alpha=-
     if game.isFinal(position) or depth == 0:
         return game.eval(position, player), position
     moves = game.move(position, player)
+    random.shuffle(moves)
     
     # print("moves {}".format(moves))
     if maximizingPlayer:
