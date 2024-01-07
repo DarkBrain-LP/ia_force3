@@ -70,7 +70,7 @@ class Card(ft.GestureDetector):
         draggable_items = self.get_draggable_items()
         # TODO : check if it is a two move action. If it is then move the pawns on the line
         try:
-            
+
             # check if we can move two slots contents from left to right
             if not self.game.initiating and slot.left == 0 and self.game.start_left == 200 and slot.top == self.slot.top:
                 # swap the slots
@@ -285,7 +285,7 @@ class Card(ft.GestureDetector):
                 self.game.can_make_vert_two_moves = False
                 self.game.can_make_hor_two_moves = True
                 return
-            
+
             # One move handler
             for item in draggable_items:
                 item.top = slot.top + draggable_items.index(item) * CARD_OFFSET
@@ -308,7 +308,7 @@ class Card(ft.GestureDetector):
         # if not self.game.is_current_player_pawn(self):
         #     self.bounce_back()
         #     return
-        
+
         self.game.start_top = e.control.top
         self.game.start_left = e.control.left
         self.move_on_top()
@@ -351,7 +351,7 @@ class Card(ft.GestureDetector):
                     # TODO : show dialog with winner
                     # print("The winner is : {}".format(self.game.ai_model.get_winner(self.game.convert_game_to_force3_board())))
                     self.game.show_game_over_dialog()
-                
+
                 self.game.current_player = 3 - self.game.current_player
                 print("next_player = {}".format(self.game.current_player))
                 # if it is the AI's turn, then play
@@ -414,7 +414,7 @@ class Pawn(Card):
             self.slot.pile.remove(self)
         self.slot = slot
         slot.pile.append(self)
-        
+
         # update the two moves counter
         self.game.nb_moves_after_two_moves = 0
         self.game.can_make_hor_two_moves = True
@@ -540,7 +540,7 @@ class Game(ft.Stack):
             self.pawn1_cards.append(Pawn(self, None, 0, 100 * i, ft.colors.RED))
             self.pawn2_cards.append(Pawn(self, None, 500, 100 * i, ft.colors.BLUE))
             # self.controls.append(Card(self, ft.colors.BLUE, border_radius=50))
-        
+
 
         # cards drawing
         if board is None:
@@ -558,7 +558,7 @@ class Game(ft.Stack):
                         print("create_cards", "empty={}".format(pos))
                         continue
                     self.game_cards[pos].place(self.slots[pos])
-        
+
         # now we will place the pawns according to the board
         # place the pawns that are not on the board to their initial position
         if board is None:
@@ -619,7 +619,7 @@ class Game(ft.Stack):
         # delete controls of the game
         for control in self.controls:
             self.remove(control)
-        
+
         self.slots = []
         delta_x = 110
         for i in range(3):
@@ -665,7 +665,7 @@ class Game(ft.Stack):
         # for i in range(3):
         #     self.pawn1_cards[i].init(self.pawn_slot1[i])
         #     self.pawn2_cards[i].init(self.pawn_slot2[i])
-            
+
         for i in range(3):
             for j in range(3):
                 value = board[i][j]
@@ -712,10 +712,16 @@ class Game(ft.Stack):
         board = self.convert_game_to_force3_board()
         print("is_game_over", "board={}".format(board))
         return self.ai_model.isFinal(board)
-    
+
     def show_game_over_dialog(self):
         """Shows a dialog when the game is over"""
-        tm.sleep(3)
+        tm.sleep(2)
+        global is_game_over
+        is_game_over = True
+        self.page.dialog = dlg_modal
+        dlg_modal.open = True
+        self.page.update()
+
         new_game = Game(page=self.page)
         self.page.controls.remove(self)
         self.page.update()
@@ -723,7 +729,7 @@ class Game(ft.Stack):
         new_game.page.add(new_game)
         # self.game.page.update()
         new_game.page.update()
-                    
+
         # self.create_cards()
         return
         if self.is_game_over():
@@ -755,7 +761,7 @@ class Game(ft.Stack):
         """Resets the game"""
         self.create_cards()
 
-    
+
 class Slot(ft.Container):
     def __init__(self, game, top, left, width=CARD_WIDTH, height=CARD_HEIGTH):
         super().__init__(top=top, left=left, width=width, height=height, border=ft.border.all(1))
@@ -819,28 +825,80 @@ class Slot(ft.Container):
 # flet main
 def main(page: ft.Page):
     force3 = Game(page=page)
-    
-    page.add(force3)
-    
-    page.update()
-    new_game = None
-    turn = 0
-    while not force3.is_game_over():
-        state = force3.convert_game_to_force3_board()
-        board = minimax(force3.ai_model, state, turn%2 == 0, depth=5)[1]
-        new_game = Game(plateau=board,page=force3.page, vert_moves=force3.can_make_vert_two_moves, hor_moves=force3.can_make_hor_two_moves, current_player=turn%2+1)
-        page.controls.remove(force3)
-        page.update()
-        # deep_copy = deepcopy(force3.game)
-        force3 = new_game
-        page.add(force3)
-        # force3.game.page.update()
-        page.update()
-        tm.sleep(3)
-        #check if the game is over
-        # force3.ai_model.current_player += 1
-        turn += 1
-    new_game.show_game_over_dialog()
+    global is_game_over
 
+    def ai_play(e):
+        close_dlg(None)
+        force3 = Game(page=page)
+        page.add(force3)
+        page.update()
+        new_game = None
+        turn = 0
+
+        # global force3
+        while not force3.is_game_over():
+            state = force3.convert_game_to_force3_board()
+            board = minimax(force3.ai_model, state, turn%2 == 0, depth=5)[1]
+            new_game = Game(plateau=board,page=force3.page, vert_moves=force3.can_make_vert_two_moves, hor_moves=force3.can_make_hor_two_moves, current_player=turn%2+1)
+            page.controls.remove(force3)
+            page.update()
+            # deep_copy = deepcopy(force3.game)
+            force3 = new_game
+            page.add(force3)
+            # force3.game.page.update()
+            page.update()
+            tm.sleep(3)
+            #check if the game is over
+            # force3.ai_model.current_player += 1
+            turn += 1
+        new_game.show_game_over_dialog()
+
+    def user_play(e):
+        close_dlg(None)
+        force3 = Game(page=page)
+        page.add(force3)
+        page.update()
+
+    def close_dlg(e):
+        dlg_modal.open = False
+        page.update()
+    end_of_game_txt = "La partie est terminée ! "
+    global dlg_modal
+    dlg_modal = ft.AlertDialog(
+        modal=True,
+        title=ft.Text(f"Type de jeu {is_game_over}"),
+        content=ft.Text(f"{end_of_game_txt if is_game_over else ''}Voulez-vous voir l'IA jouer contre elle-même ?"),
+        actions=[
+            ft.TextButton("Oui", on_click=ai_play),
+            ft.TextButton("Non", on_click=user_play),
+        ],
+        actions_alignment=ft.MainAxisAlignment.END,
+        on_dismiss=lambda e: print("Modal dialog dismissed!"),
+    )
+
+
+
+
+    def open_dlg_modal(e=None):
+        page.dialog = dlg_modal
+        dlg_modal.open = True
+        page.update()
+
+    def show_game_over_dialog(e):
+        is_game_over = True
+        open_dlg_modal()
+        
+
+    open_dlg_modal()
+    # page.add(
+    #     ft.ElevatedButton("Open modal dialog", on_click=open_dlg_modal),
+    # )
+
+    # page.add(force3)
+
+    # page.update()
+
+dlg_modal = None
+is_game_over = False
 
 ft.app(name="Force3", target=main)
