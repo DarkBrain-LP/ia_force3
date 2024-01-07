@@ -27,6 +27,7 @@ Keyword arguments:
 argument -- description
 Return: return_description
 """
+import random
 import time
 
 
@@ -37,6 +38,8 @@ class Force3:
         self.two_case_mv_dir = -1 # represents the direction in which the two case could be moved : -1 if impossible, 0 for horizontal, 1 for vertical
         # -1 represente un carré innocupé, 0 la case vide, 1 un pion du jour 1 et 2 un pion du joueur 2
         self.plateau = [[-1, -1, -1], [-1, 0, -1], [-1, -1, -1]]
+        self.can_make_hor_two_moves = True
+        self.can_make_vert_two_moves = True
 
     def canMoveTwoCases(x,y):
         if (x,y) in [(0,0), (0,2), (2,0), (2,2)]:
@@ -95,6 +98,8 @@ class Force3:
                 new_board[x][y] = new_board[x][y-1]
                 new_board[x][y-1] = 0
                 possible_states.append(new_board)
+            self.can_make_hor_two_moves = True
+            self.can_make_vert_two_moves = True
             return possible_states
         
         except Exception as e:
@@ -113,33 +118,41 @@ class Force3:
             possible_states = []
             # clone the board
             # move up
-            if x == 0:
+            if x == 0 and self.can_make_vert_two_moves:
                 new_board = [[state[i][j] for j in range(3)] for i in range(3)]
                 for i in range(2):
                     new_board[x+i][y] = new_board[x+i+1][y]
                     new_board[x+i+1][y] = 0
                 possible_states.append(new_board)
+                self.can_make_vert_two_moves = False
+                self.can_make_hor_two_moves = True
             # move down
-            if x == 2:
+            if x == 2 and self.can_make_vert_two_moves:
                 new_board = [[state[i][j] for j in range(3)] for i in range(3)]
                 for i in range(2):
                     new_board[x-i][y] = new_board[x-i-1][y]
                     new_board[x-i-1][y] = 0
                 possible_states.append(new_board)
+                self.can_make_vert_two_moves = False
+                self.can_make_hor_two_moves = True
             # move left
-            if y == 0:
+            if y == 0 and self.can_make_hor_two_moves:
                 new_board = [[state[i][j] for j in range(3)] for i in range(3)]
                 for i in range(2):
                     new_board[x][y+i] = new_board[x][y+i+1]
                     new_board[x][y+i+1] = 0
                 possible_states.append(new_board)
+                self.can_make_hor_two_moves = False
+                self.can_make_vert_two_moves = True
             # move right
-            if y == 2:
+            if y == 2 and self.can_make_hor_two_moves:
                 new_board = [[state[i][j] for j in range(3)] for i in range(3)]
                 for i in range(2):
                     new_board[x][y-i] = new_board[x][y-i-1]
                     new_board[x][y-i-1] = 0
                 possible_states.append(new_board)
+                self.can_make_hor_two_moves = False
+                self.can_make_vert_two_moves = True
             return possible_states
         
         except Exception as e:
@@ -162,6 +175,8 @@ class Force3:
                     new_board = [[state[i][j] for j in range(3)] for i in range(3)]
                     new_board[i][j] = player
                     possible_states.append(new_board)
+        self.can_make_hor_two_moves = True
+        self.can_make_vert_two_moves = True
         return possible_states
     
     def poseSurCarreVideo(self, x, y, player, state=None):
@@ -169,6 +184,7 @@ class Force3:
         if state is None:
             state = self.plateau
         # print("x,y = {} {}".format(x, y))
+        # print("postSurCarreVide_plateau : {}".format(state))
         for i in range(3):
             for j in range(3):
                 if state[i][j] == -1:
@@ -187,11 +203,14 @@ class Force3:
             player = self.current_player
         if state is None:
             state = self.plateau
+        # print("movePion_plateau : {}".format(state))
         possible_states = []
         for i in range(3):
             for j in range(3):
                 if state[i][j] == player: #if the case is empty
-                    possible_states += self.poseSurCarreVideo(i, j, player)
+                    possible_states += self.poseSurCarreVideo(i, j, player, state=state)
+        self.can_make_hor_two_moves = True
+        self.can_make_vert_two_moves = True
         return possible_states
 
     def move(self, state=None, player=None):
@@ -202,6 +221,13 @@ class Force3:
         if player is None:
             player = self.current_player
         # print("move_plateau : {}".format(state))
+            l = []
+        if sum([row.count(player) for row in state]) == 3:
+            l = self.movePion(state, player) + self.moveOneCase(state=state, player=player) + self.moveTwoCases(state, player)
+        else:
+            l = self.posePion(state=state, player=player) #+ self.moveOneCase(state=state, player=player) + self.moveTwoCases(state, player)
+        random.shuffle(l)
+        return l
         return self.posePion(state, player) + self.movePion(state, player) + self.moveOneCase(state=state, player=player) + self.moveTwoCases(state, player)
 
     def getPlayerPawns(self, position=None, player=None):
@@ -348,15 +374,30 @@ class Force3:
             diagonal_aligned = set(diagonal_aligned)
             vertical_aligned = set(vertical_aligned)
             horizontal_aligned = set(horizontal_aligned)
+            # print("diagonal_aligned {}".format(diagonal_aligned))
+            # print("vertical_aligned {}".format(vertical_aligned))
+            # print("horizontal_aligned {}".format(horizontal_aligned))
 
-            if len(diagonal_aligned) == 3 or len(vertical_aligned) == 3 or len(horizontal_aligned) == 3:
+            if len(vertical_aligned) == 3 or len(horizontal_aligned) == 3:
+                return True
+            if len(diagonal_aligned) == 3:
+                # check if each point is diagonaly aligned with the other two
+                for it1 in diagonal_aligned:
+                    for it2 in diagonal_aligned:
+                        if it1 == it2:
+                            continue
+                        if not is_diagolally_aligned(it1, it2):
+                            return False
+                # if all(abs(l[i][0] - l[i-1][0]) == abs(l[i][1] - l[i-1][1]) for i in range(1, len(l))):
                 return True
         return False
         player = self.current_player
         pawns = self.getPlayerPawns()
         return self.f(pawns) == 1000
 
-    
+def is_diagolally_aligned(l1, l2):
+    """check if two points are aligned diagonally"""
+    return abs(l1[0] - l2[0]) == abs(l1[1] - l2[1])
 
 def minimax(game:Force3, position:list, maximizingPlayer:bool, depth=-1, alpha=-1000, beta=1000):
     
@@ -365,6 +406,7 @@ def minimax(game:Force3, position:list, maximizingPlayer:bool, depth=-1, alpha=-
     if game.isFinal(position) or depth == 0:
         return game.eval(position, player), position
     moves = game.move(position, player)
+    random.shuffle(moves)
     
     # print("moves {}".format(moves))
     if maximizingPlayer:
@@ -392,23 +434,41 @@ def minimax(game:Force3, position:list, maximizingPlayer:bool, depth=-1, alpha=-
 
 if __name__ == "__main__":
     game = Force3()
-    print(game.isFinal([[1, -1, 2], [-1, -1, 2], [0, 1, 2]]))
-    game.plateau = [[1, -1, -1],
-                [2, 0, -1],
-                [-1, 1, 2]]
+    print(game.isFinal([[0, -1, 1], [-1, 1, -1], [1, -1, 1]]))
+    game.current_player = 2
+    # print(game.move([[2, -1, 1], 
+    #                     [0, 1, 2], 
+    #                     [-1, -1, 1]], 2))
+    state = [[2, -1, 1], 
+                        [0, 1, 2], 
+                        [-1, -1, 1]]
+    player = 2
+    # print(game.posePion(state, player)) 
+    # print()
+    # print(game.movePion(state, player)) 
+    # print()
+    # print(game.moveOneCase(state=state, player=player))
+    # print()
+    # print(game.moveTwoCases(state, player))
+    # print()
+
+    print(minimax(game,[[-1, -1, -1], [-1, 0, -1], [-1, -1, 1]], True, depth=3))
+    # game.plateau = [[1, -1, -1],
+    #             [2, 0, -1],
+    #             [-1, 1, 2]]
    
-    depth =4
-    plateau = [[1, -1, -1],
-                [2, 0, -1],
-                [-1, 1, 2]]
-    for i in range(0,100):
-        start = time.time()
-        maximizing = True if i%2 == 0 else False
-        minmax_return = minimax(game, plateau, maximizingPlayer=maximizing, depth=depth)
-        plateau = minmax_return[1]
-        # print(minmax_return)
-        end = time.time()
-        print("player: {}, point={} time={}".format(2 if maximizing else 1, minmax_return[0],end-start))
-        for mv in minmax_return[1]:
-            print('\t',mv)
+    # depth =4
+    # plateau = [[1, -1, -1],
+    #             [2, 0, -1],
+    #             [-1, 1, 2]]
+    # for i in range(0,100):
+    #     start = time.time()
+    #     maximizing = True if i%2 == 0 else False
+    #     minmax_return = minimax(game, plateau, maximizingPlayer=maximizing, depth=depth)
+    #     plateau = minmax_return[1]
+    #     # print(minmax_return)
+    #     end = time.time()
+    #     print("player: {}, point={} time={}".format(2 if maximizing else 1, minmax_return[0],end-start))
+    #     for mv in minmax_return[1]:
+    #         print('\t',mv)
    
