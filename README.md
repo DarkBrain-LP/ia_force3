@@ -49,3 +49,9 @@ The flet package was used to implement the UI. Thanks to the flutter widgets, cu
 - **Slot** : represents the spaces where the **Card** and **Pawn** will not be placed
 - **Card** represents the empty squares on which the **Pawn** will be placed
 - **Pawn** represents the round game pieces
+
+## TODOs
+- refactor the code
+- implement the alpha-bêta prunning
+- save the scores
+- reinforce the AI by making it learn from his previous games 
