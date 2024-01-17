@@ -54,4 +54,10 @@ The flet package was used to implement the UI. Thanks to the flutter widgets, cu
 - refactor the code
 - implement the alpha-bêta prunning
 - save the scores
-- reinforce the AI by making it learn from his previous games 
+- reinforce the AI by making it learn from his previous games
+
+## How does it look ?
+  ![image](https://github.com/DarkBrain-LP/ia_force3/assets/96789008/875ba942-60d2-48f4-a1f0-02b59eb5fe0e)
+
+  ![image](https://github.com/DarkBrain-LP/ia_force3/assets/96789008/e3fc6437-335f-43f7-8b78-1b8b052fa501)
+
